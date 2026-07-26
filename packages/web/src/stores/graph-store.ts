@@ -30,15 +30,22 @@ export const useGraphStore = create<GraphState>((set) => ({
   canvasMode: "expanded",
   previewNodeId: null,
 
-  setGraphState: (graph, nodes, edges) => {
-    const root = nodes.find((n) => n.id === graph.rootNodeId);
-    set({
-      graph,
-      nodes,
-      edges,
-      activeNodeId: root?.id ?? null,
-    });
-  },
+  setGraphState: (graph, nodes, edges) =>
+    set((s) => {
+      // graph_state is re-broadcast after every message/branch/merge, not just
+      // on first load — resetting to root unconditionally on each one would
+      // silently pull the user back to root while they're mid-conversation on
+      // a branch. Keep the current active node as long as it still exists;
+      // only fall back to root on first load or if it was deleted.
+      const currentStillValid = s.activeNodeId !== null && nodes.some((n) => n.id === s.activeNodeId);
+      const root = nodes.find((n) => n.id === graph.rootNodeId);
+      return {
+        graph,
+        nodes,
+        edges,
+        activeNodeId: currentStillValid ? s.activeNodeId : (root?.id ?? null),
+      };
+    }),
 
   setActiveNode: (id) => set({ activeNodeId: id, selectedNodeIds: [] }),
 

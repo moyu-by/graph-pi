@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { CompressToggle } from "./CompressToggle";
 import { useGraphStore } from "@/stores/graph-store";
 import { useAgentContext } from "@/hooks/useAgentContext";
@@ -12,10 +13,17 @@ export function MergeDialog({ onClose }: Props) {
   // Ordered by selectedNodeIds (accumulated in click order), not by the
   // nodes array's own order — the server uses parentNodeIds order, and
   // users expect it to reflect the order they clicked nodes in.
-  const selectedNodes = useGraphStore((s) =>
-    s.selectedNodeIds
-      .map((id) => s.nodes.find((n) => n.id === id))
-      .filter((n): n is Node => n !== undefined)
+  //
+  // `.map().filter()` builds a new array every call, so without useShallow
+  // Zustand's reference-equality check never sees "no change" and re-renders
+  // forever (React error #185, confirmed by actually opening this dialog).
+  // useShallow compares the array's elements instead of its reference.
+  const selectedNodes = useGraphStore(
+    useShallow((s) =>
+      s.selectedNodeIds
+        .map((id) => s.nodes.find((n) => n.id === id))
+        .filter((n): n is Node => n !== undefined)
+    )
   );
   const clearSelection = useGraphStore((s) => s.clearSelection);
   const { send } = useAgentContext();

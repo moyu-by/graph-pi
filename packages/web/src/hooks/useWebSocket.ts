@@ -8,6 +8,18 @@ export function useWebSocket(
   onReconnect?: () => void,
 ) {
   const clientRef = useRef<WsClient | null>(null);
+  // Created synchronously on first render, not inside the effect below.
+  // useAgentContext's AgentProvider is an ancestor of route components like
+  // GraphPage, and React fires child effects before parent effects on mount
+  // — so a route's own effect calling send() (e.g. to select a graph on a
+  // fresh full page load, not an in-app navigation where this was already
+  // connected) could run before this hook's effect had created the client,
+  // silently dropping the message via the `clientRef.current?.send(...)`
+  // optional chain instead of queuing it. Eagerly creating the instance here
+  // means it always exists by the time any effect — parent or child — runs.
+  if (clientRef.current === null) {
+    clientRef.current = new WsClient(config.wsUrl);
+  }
   const onMessageRef = useRef(onMessage);
   const onReconnectRef = useRef(onReconnect);
   onMessageRef.current = onMessage;
@@ -17,8 +29,7 @@ export function useWebSocket(
   const [isConnected, setIsConnected] = useState(true);
 
   useEffect(() => {
-    const client = new WsClient(config.wsUrl);
-    clientRef.current = client;
+    const client = clientRef.current!;
 
     const unsubMsg = client.onMessage((msg) => {
       onMessageRef.current(msg);

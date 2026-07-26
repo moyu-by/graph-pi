@@ -11,7 +11,17 @@ export function useAgent() {
       switch (msg.type) {
         case "graph_state": {
           const gs = msg.graph as unknown as GraphState;
+          const hadActiveNode = useGraphStore.getState().activeNodeId !== null;
           useGraphStore.getState().setGraphState(gs.graph, gs.nodes, gs.edges);
+          // setGraphState only *picks* an active node (defaulting to root on
+          // first load) — it never fetches that node's actual messages. Do
+          // that once here, the first time a node becomes active, so opening
+          // a graph shows real content immediately instead of an empty chat
+          // panel until the user happens to click a node.
+          if (!hadActiveNode) {
+            const newActiveId = useGraphStore.getState().activeNodeId;
+            if (newActiveId) send({ type: "select_node", nodeId: newActiveId });
+          }
           break;
         }
         case "node_selected": {
