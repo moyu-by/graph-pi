@@ -8,7 +8,7 @@
   },
   "scripts": {
     "graph-pi": "node bin/graph-pi.js",
-    "build": "cd packages/shared && npx tsc && cd ../../ && cd packages/web && npx vite build && cd ../../",
+    "build": "cd packages/shared && npx tsc && cd ../.. && cd packages/web && npx vite build && cd ../.. && cd packages/server && npx tsc && cd ../..",
     "typecheck": "tsc -b",
     "prepublishOnly": "npm run build"
   },
