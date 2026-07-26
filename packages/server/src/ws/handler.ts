@@ -277,9 +277,17 @@ export class WebSocketHandler {
       return;
     }
 
+    // Every branch off the same parent otherwise gets the exact same default
+    // title, indistinguishable in the sidebar/graph until you open each one.
+    const existingSiblings = this.store.getNodeChildren(msg.parentNodeId).length;
+    const title =
+      existingSiblings > 0
+        ? `Branch from ${parentNode.title} (${existingSiblings + 1})`
+        : `Branch from ${parentNode.title}`;
+
     const branch = this.store.createNode(
       parentNode.graphId,
-      `Branch from ${parentNode.title}`,
+      title,
       [msg.parentNodeId],
       msg.afterMessageId
     );

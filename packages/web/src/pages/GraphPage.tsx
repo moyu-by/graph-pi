@@ -15,6 +15,7 @@ export default function GraphPage() {
   const graphId = params.id as string;
   const { selectGraph, isConnected } = useAgentContext();
   const graph = useGraphStore((s) => s.graph);
+  const storeNodes = useGraphStore((s) => s.nodes);
   const [showMerge, setShowMerge] = useState(false);
   const selectedNodeIds = useGraphStore((s) => s.selectedNodeIds);
   const error = useChatStore((s) => s.error);
@@ -45,13 +46,25 @@ export default function GraphPage() {
           style={{ background: "radial-gradient(circle, var(--cyan) 0%, transparent 70%)" }} />
       </div>
       <div className="flex items-center justify-between px-4 py-2 shrink-0 relative z-10">
-        <span className="text-xs text-fg-muted flex items-center gap-1.5">
-          <div className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--cyan)" }} />
-          {canvasMode === "expanded" ? "Graph" : "Tree"}
+        <span className="text-xs text-fg-muted flex items-center gap-2">
+          <span className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--cyan)" }} />
+            {canvasMode === "expanded" ? "Graph" : "Tree"}
+          </span>
+          {storeNodes.length >= 2 && selectedNodeIds.length === 0 && (
+            <span className="text-fg-faint text-[10px]">· Shift+click nodes to merge</span>
+          )}
         </span>
         <button
           className="text-fg-muted hover:text-accent p-1.5 rounded-md hover:bg-accent-muted transition-colors"
           onClick={cycleCanvasMode}
+          title={
+            canvasMode === "expanded"
+              ? "Switch to compact tree view"
+              : canvasMode === "collapsed"
+                ? "Hide graph panel"
+                : "Show graph panel"
+          }
         >
           {canvasMode === "expanded" ? (
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -110,6 +123,7 @@ export default function GraphPage() {
               <button
                 className="p-2 text-fg-muted hover:text-accent rounded-lg hover:bg-accent-muted transition-colors"
                 onClick={cycleCanvasMode}
+                title="Show graph panel"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <circle cx="12" cy="12" r="3"/>

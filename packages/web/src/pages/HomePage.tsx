@@ -2,41 +2,23 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { config } from "@/lib/config";
-
-interface GraphSummary {
-  id: string;
-  title: string;
-  createdAt: number;
-}
+import { useGraphListStore } from "@/stores/graph-list-store";
+import { graphAvatarColor } from "@/lib/colors";
 
 export default function HomePage() {
   const router = useNavigate();
-  const [graphs, setGraphs] = useState<GraphSummary[]>([]);
+  const graphs = useGraphListStore((s) => s.graphs);
+  const graphsLoading = useGraphListStore((s) => s.loading);
+  const graphsError = useGraphListStore((s) => s.error);
+  const loadGraphs = useGraphListStore((s) => s.load);
   const [newTitle, setNewTitle] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [graphsLoading, setGraphsLoading] = useState(true);
-  const [graphsError, setGraphsError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
-  const loadGraphs = () => {
-    setGraphsLoading(true);
-    setGraphsError(null);
-    fetch(`${config.apiUrl}/api/graphs`)
-      .then((r) => {
-        if (!r.ok) throw new Error(`Failed to load graphs (${r.status})`);
-        return r.json();
-      })
-      .then(setGraphs)
-      .catch((err) => {
-        setGraphsError(err instanceof Error ? err.message : "Failed to load graphs");
-      })
-      .finally(() => setGraphsLoading(false));
-  };
-
   useEffect(() => {
     loadGraphs();
-  }, []);
+  }, [loadGraphs]);
 
   const createGraph = async () => {
     if (creating) return;
@@ -51,6 +33,7 @@ export default function HomePage() {
       });
       if (!res.ok) throw new Error(`Failed to create graph (${res.status})`);
       const graph = await res.json();
+      loadGraphs();
       router(`/graph/${graph.id}`);
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : "Failed to create graph");
@@ -142,7 +125,9 @@ export default function HomePage() {
               <p className="text-xs text-fg-muted">Create your first graph to get started</p>
             </div>
           )}
-          {!graphsLoading && !graphsError && graphs.map((g, i) => (
+          {!graphsLoading && !graphsError && graphs.map((g, i) => {
+            const color = graphAvatarColor(i);
+            return (
             <div
               key={g.id}
               className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all group hover:bg-bg-elevated/60 hover:border-border-default border border-transparent hover:shadow-sm mb-1"
@@ -150,16 +135,8 @@ export default function HomePage() {
               style={{ animationDelay: `${i * 50}ms` }}
             >
               <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all group-hover:scale-110"
-                style={{ background: `linear-gradient(135deg, ${
-                  ["var(--accent)", "var(--blue)", "var(--green)", "var(--cyan)", "var(--pink)", "var(--teal)"][i % 6]
-                }22, ${
-                  ["var(--accent)", "var(--blue)", "var(--green)", "var(--cyan)", "var(--pink)", "var(--teal)"][i % 6]
-                }08)`, border: `1px solid ${
-                  ["var(--accent)", "var(--blue)", "var(--green)", "var(--cyan)", "var(--pink)", "var(--teal)"][i % 6]
-                }30)` }}>
-                <span className="text-xs font-semibold" style={{ color: [
-                  "var(--accent)", "var(--blue)", "var(--green)", "var(--cyan)", "var(--pink)", "var(--teal)"
-                ][i % 6] }}>
+                style={{ background: `linear-gradient(135deg, ${color}22, ${color}08)`, border: `1px solid ${color}30)` }}>
+                <span className="text-xs font-semibold" style={{ color }}>
                   {g.title.charAt(0).toUpperCase()}
                 </span>
               </div>
@@ -174,7 +151,8 @@ export default function HomePage() {
                 <polyline points="9 18 15 12 9 6"/>
               </svg>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

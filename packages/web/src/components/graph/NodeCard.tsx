@@ -43,6 +43,14 @@ function NodeCardComponent({ data }: NodeProps<GraphNode>) {
             boxShadow: data.isActive ? "0 0 6px var(--accent)" : data.isSelected ? "0 0 6px var(--purple)" : "none",
           }} />
         <span className="text-xs font-medium text-fg-primary truncate">{data.label}</span>
+        {data.isLocked && (
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+            className="text-fg-faint shrink-0">
+            <title>Locked — has child branches, can&apos;t message directly</title>
+            <rect x="5" y="11" width="14" height="10" rx="2"/>
+            <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+          </svg>
+        )}
       </div>
       <p className="text-[10px] text-fg-muted mt-1.5 ml-4.5 font-mono flex items-center gap-1">
         <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-fg-faint">

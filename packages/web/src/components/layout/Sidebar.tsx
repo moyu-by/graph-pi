@@ -1,15 +1,11 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useGraphStore } from "@/stores/graph-store";
+import { useGraphListStore } from "@/stores/graph-list-store";
 import { useAgentContext } from "@/hooks/useAgentContext";
 import { config } from "@/lib/config";
+import { graphAvatarColor } from "@/lib/colors";
 import { ModelSelector } from "./ModelSelector";
-
-interface GraphSummary {
-  id: string;
-  title: string;
-  createdAt: number;
-}
 
 interface Props {
   collapsed: boolean;
@@ -20,10 +16,11 @@ export function Sidebar({ collapsed, onToggle }: Props) {
   const router = useNavigate();
   const params = useParams();
   const currentGraphId = params.id;
-  const [graphs, setGraphs] = useState<GraphSummary[]>([]);
+  const graphs = useGraphListStore((s) => s.graphs);
+  const graphsLoading = useGraphListStore((s) => s.loading);
+  const graphsError = useGraphListStore((s) => s.error);
+  const loadGraphs = useGraphListStore((s) => s.load);
   const [newTitle, setNewTitle] = useState("");
-  const [graphsLoading, setGraphsLoading] = useState(true);
-  const [graphsError, setGraphsError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const nodes = useGraphStore((s) => s.nodes);
@@ -66,26 +63,9 @@ export function Sidebar({ collapsed, onToggle }: Props) {
     };
   }, []);
 
-  const graphApi = () => `${config.apiUrl}/api/graphs`;
-
-  const loadGraphs = () => {
-    setGraphsLoading(true);
-    setGraphsError(null);
-    fetch(graphApi())
-      .then((r) => {
-        if (!r.ok) throw new Error(`Failed to load graphs (${r.status})`);
-        return r.json();
-      })
-      .then(setGraphs)
-      .catch((err) => {
-        setGraphsError(err instanceof Error ? err.message : "Failed to load graphs");
-      })
-      .finally(() => setGraphsLoading(false));
-  };
-
   useEffect(() => {
     loadGraphs();
-  }, []);
+  }, [loadGraphs]);
 
   const createGraph = async () => {
     if (creating) return;
@@ -93,7 +73,7 @@ export function Sidebar({ collapsed, onToggle }: Props) {
     setCreating(true);
     setCreateError(null);
     try {
-      const res = await fetch(graphApi(), {
+      const res = await fetch(`${config.apiUrl}/api/graphs`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title }),
@@ -153,11 +133,7 @@ export function Sidebar({ collapsed, onToggle }: Props) {
                 : "text-fg-muted hover:text-fg-primary hover:bg-bg-hover"
             }`}
             style={g.id === currentGraphId ? {
-              background: `linear-gradient(135deg, ${
-                ["var(--accent)", "var(--blue)", "var(--green)", "var(--cyan)"][i % 4]
-              }, ${
-                ["var(--purple)", "var(--cyan)", "var(--teal)", "var(--blue)"][i % 4]
-              })`
+              background: `linear-gradient(135deg, ${graphAvatarColor(i)}, ${graphAvatarColor(i + 1)})`
             } : {}}
             onClick={() => router(`/graph/${g.id}`)}
             title={g.title}
@@ -197,6 +173,7 @@ export function Sidebar({ collapsed, onToggle }: Props) {
         <button
           className="w-6 h-6 rounded-md flex items-center justify-center text-fg-muted hover:text-fg-primary hover:bg-bg-hover transition-colors"
           onClick={onToggle}
+          title="Collapse sidebar"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <polyline points="15 18 9 12 15 6"/>
@@ -218,6 +195,7 @@ export function Sidebar({ collapsed, onToggle }: Props) {
             style={{ background: "var(--gradient-primary)" }}
             onClick={createGraph}
             disabled={creating}
+            title="Create graph"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="12" y1="5" x2="12" y2="19"/>
@@ -243,7 +221,7 @@ export function Sidebar({ collapsed, onToggle }: Props) {
           </div>
         )}
         {!graphsLoading && !graphsError && graphs.map((g, i) => {
-          const color = ["var(--accent)", "var(--blue)", "var(--green)", "var(--cyan)", "var(--pink)", "var(--teal)"][i % 6];
+          const color = graphAvatarColor(i);
           return (
             <div key={g.id}>
               <button

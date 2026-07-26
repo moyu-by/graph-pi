@@ -153,6 +153,14 @@ textarea:focus, input:focus, button:focus-visible {
   box-shadow: var(--shadow-sm) !important;
 }
 
+.react-flow__attribution {
+  background: transparent !important;
+}
+
+.react-flow__attribution a {
+  color: var(--fg-faint) !important;
+}
+
 .markdown-content {
   word-wrap: break-word;
   overflow-wrap: break-word;
