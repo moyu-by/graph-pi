@@ -1,6 +1,7 @@
 import { config } from "dotenv";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
+import { mkdirSync, existsSync } from "fs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -20,6 +21,10 @@ import { WebSocketHandler } from "./ws/handler.js";
 
 const PORT = parseInt(process.env.PORT || "3001", 10);
 const DB_PATH = process.env.DB_PATH || "./data/graph-pi.db";
+
+// Ensure database directory exists
+const dbDir = dirname(resolve(DB_PATH));
+if (!existsSync(dbDir)) mkdirSync(dbDir, { recursive: true });
 
 const app = express();
 app.use(express.json());
