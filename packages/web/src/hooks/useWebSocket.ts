@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { WsClient } from "@/lib/ws-client";
 import { config } from "@/lib/config";
 import type { ClientMessage, ServerMessage } from "@graph-pi/shared";
@@ -12,6 +12,9 @@ export function useWebSocket(
   const onReconnectRef = useRef(onReconnect);
   onMessageRef.current = onMessage;
   onReconnectRef.current = onReconnect;
+  // Optimistic initial value avoids flashing a "disconnected" banner while
+  // the very first connection attempt (typically sub-second) is in flight.
+  const [isConnected, setIsConnected] = useState(true);
 
   useEffect(() => {
     const client = new WsClient(config.wsUrl);
@@ -25,11 +28,16 @@ export function useWebSocket(
       onReconnectRef.current?.();
     });
 
+    const unsubStatus = client.onStatusChange((connected) => {
+      setIsConnected(connected);
+    });
+
     client.connect();
 
     return () => {
       unsubMsg();
       unsubReconn();
+      unsubStatus();
       client.disconnect();
       clientRef.current = null;
     };
@@ -39,5 +47,5 @@ export function useWebSocket(
     clientRef.current?.send(msg);
   }, []);
 
-  return { send, clientRef };
+  return { send, clientRef, isConnected };
 }

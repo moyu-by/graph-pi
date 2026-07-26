@@ -6,10 +6,25 @@
   "bin": {
     "graph-pi": "./bin/graph-pi.js"
   },
+  "workspaces": [
+    "packages/*"
+  ],
+  "files": [
+    "bin",
+    "packages/shared/dist",
+    "packages/shared/package.json",
+    "packages/server/dist",
+    "packages/server/package.json",
+    "packages/web/dist",
+    "packages/web/package.json",
+    ".env.example",
+    "THIRD-PARTY-LICENSES"
+  ],
   "scripts": {
     "graph-pi": "node bin/graph-pi.js",
     "build": "cd packages/shared && npx tsc && cd ../.. && cd packages/web && npx vite build && cd ../.. && cd packages/server && npx tsc -b && cd ../..",
-    "typecheck": "tsc -b",
+    "typecheck": "tsc -b && cd packages/web && npx tsc --noEmit && cd ../..",
+    "test": "node --test packages/shared/src/*.test.ts",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -32,7 +47,7 @@
   },
   "homepage": "https://github.com/moyu-by/graph-pi#readme",
   "engines": {
-    "node": ">=18"
+    "node": ">=22.13.0"
   },
   "dependencies": {
     "@earendil-works/pi-agent-core": "^0.82.1",
@@ -66,7 +81,6 @@
     "vite": "^5.4.0"
   },
   "allowScripts": {
-    "better-sqlite3": true,
     "esbuild": true
   }
 }

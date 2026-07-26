@@ -1,24 +1,7 @@
 import { useState } from "react";
 import { useGraphStore } from "@/stores/graph-store";
-import type { Node } from "@graph-pi/shared";
+import { getAncestorClosure, type Node } from "@graph-pi/shared";
 import { MessageItem } from "./MessageItem";
-
-function getAncestorChain(nodeId: string, nodes: Node[]): Node[] {
-  const chain: Node[] = [];
-  const visited = new Set<string>();
-  let currentId: string | null = nodeId;
-
-  while (currentId) {
-    if (visited.has(currentId)) break;
-    visited.add(currentId);
-    const node = nodes.find((n) => n.id === currentId);
-    if (!node) break;
-    chain.unshift(node);
-    currentId = node.parentIds[0] ?? null;
-  }
-
-  return chain;
-}
 
 export function AncestorContext() {
   const [expanded, setExpanded] = useState(false);
@@ -27,8 +10,15 @@ export function AncestorContext() {
 
   if (!activeNodeId) return null;
 
-  const chain = getAncestorChain(activeNodeId, nodes);
-  const ancestors = chain.slice(0, -1);
+  // Full ancestor closure (not just the parentIds[0] chain) so merged nodes
+  // show every branch that fed into them, not only the most recent one.
+  const closureIds = getAncestorClosure(activeNodeId, (id) =>
+    nodes.find((n) => n.id === id)
+  );
+  const ancestors = closureIds
+    .slice(0, -1)
+    .map((id) => nodes.find((n) => n.id === id))
+    .filter((n): n is Node => n !== undefined);
 
   if (ancestors.length === 0) return null;
 

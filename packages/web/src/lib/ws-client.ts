@@ -6,15 +6,20 @@ export class WsClient {
   private ws: WebSocket | null = null;
   private handlers = new Set<MessageHandler>();
   private onReconnectHandlers = new Set<() => void>();
+  private statusHandlers = new Set<(connected: boolean) => void>();
   private url: string;
-  private reconnectInterval: number;
+  private baseReconnectInterval: number;
+  private maxReconnectInterval: number;
+  private currentReconnectInterval: number;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private pendingMessages: string[] = [];
   private connected = false;
 
-  constructor(url: string, reconnectInterval = 3000) {
+  constructor(url: string, baseReconnectInterval = 1000, maxReconnectInterval = 15000) {
     this.url = url;
-    this.reconnectInterval = reconnectInterval;
+    this.baseReconnectInterval = baseReconnectInterval;
+    this.maxReconnectInterval = maxReconnectInterval;
+    this.currentReconnectInterval = baseReconnectInterval;
   }
 
   connect(): void {
@@ -24,7 +29,10 @@ export class WsClient {
 
     this.ws.onopen = () => {
       const wasReconnect = this.connected;
-      this.connected = true;
+      this.setConnected(true);
+      // Connection succeeded — reset backoff so the *next* disconnect starts
+      // retrying quickly again instead of inheriting a long-grown interval.
+      this.currentReconnectInterval = this.baseReconnectInterval;
       if (this.reconnectTimer) {
         clearTimeout(this.reconnectTimer);
         this.reconnectTimer = null;
@@ -52,7 +60,7 @@ export class WsClient {
     };
 
     this.ws.onclose = () => {
-      this.connected = false;
+      this.setConnected(false);
       this.scheduleReconnect();
     };
 
@@ -68,10 +76,19 @@ export class WsClient {
     }
     this.handlers.clear();
     this.onReconnectHandlers.clear();
+    this.statusHandlers.clear();
     this.pendingMessages = [];
     this.connected = false;
     this.ws?.close();
     this.ws = null;
+  }
+
+  private setConnected(connected: boolean): void {
+    if (this.connected === connected) return;
+    this.connected = connected;
+    for (const handler of this.statusHandlers) {
+      handler(connected);
+    }
   }
 
   send(msg: ClientMessage): void {
@@ -93,15 +110,27 @@ export class WsClient {
     return () => this.onReconnectHandlers.delete(handler);
   }
 
+  /** Subscribe to connected/disconnected transitions. */
+  onStatusChange(handler: (connected: boolean) => void): () => void {
+    this.statusHandlers.add(handler);
+    return () => this.statusHandlers.delete(handler);
+  }
+
   isConnected(): boolean {
     return this.connected;
   }
 
   private scheduleReconnect(): void {
     if (this.reconnectTimer) return;
+    const delay = this.currentReconnectInterval;
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
       this.connect();
-    }, this.reconnectInterval);
+    }, delay);
+    // Exponential backoff for the *next* attempt if this one also fails.
+    this.currentReconnectInterval = Math.min(
+      this.currentReconnectInterval * 2,
+      this.maxReconnectInterval
+    );
   }
 }

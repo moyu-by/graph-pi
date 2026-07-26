@@ -34,6 +34,7 @@ export class GraphStore {
   constructor(dbPath: string) {
     this.db = new DatabaseSync(dbPath);
     this.db.exec("PRAGMA foreign_keys = ON");
+    this.db.exec("PRAGMA journal_mode = WAL");
     this.db.exec(SCHEMA_SQL);
   }
 
@@ -180,7 +181,7 @@ export class GraphStore {
     if (!row) return null;
 
     const parentRows = this.db
-      .prepare("SELECT parent_id FROM node_parents WHERE node_id = ?")
+      .prepare("SELECT parent_id FROM node_parents WHERE node_id = ? ORDER BY rowid")
       .all(nodeId) as unknown as { parent_id: string }[];
 
     const messages = this.getMessages(nodeId);
@@ -343,27 +344,6 @@ export class GraphStore {
   }
 
   // Graph traversal
-
-  getAncestorPath(nodeId: string): string[] {
-    const path: string[] = [];
-    let currentId: string | null = nodeId;
-    const visited = new Set<string>();
-
-    while (currentId) {
-      if (visited.has(currentId)) break;
-      visited.add(currentId);
-      path.unshift(currentId);
-
-      const parents = this.db
-        .prepare("SELECT parent_id FROM node_parents WHERE node_id = ?")
-        .all(currentId) as unknown as { parent_id: string }[];
-
-      if (parents.length === 0) break;
-      currentId = parents[0].parent_id;
-    }
-
-    return path;
-  }
 
   getAllEdges(graphId: string): { source: string; target: string }[] {
     const rows = this.db

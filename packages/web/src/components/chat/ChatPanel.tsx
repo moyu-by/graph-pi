@@ -5,7 +5,7 @@ import { BranchSelector } from "./BranchSelector";
 import { useGraphStore } from "@/stores/graph-store";
 import { useChatStore } from "@/stores/chat-store";
 import { estimateMessagesTokens, formatTokens } from "@/lib/tokens";
-import type { Node } from "@graph-pi/shared";
+import { getAncestorClosure, type Node } from "@graph-pi/shared";
 
 export function ChatPanel() {
   const activeNodeId = useGraphStore((s) => s.activeNodeId);
@@ -17,20 +17,33 @@ export function ChatPanel() {
 
   const { ancestorPath, ancestorNodes, totalTokens } = useMemo(() => {
     if (!activeNode) return { ancestorPath: [] as string[], ancestorNodes: [] as Node[], totalTokens: 0 };
+
+    // Breadcrumb display: just the most recent chain (parentIds[0]). A merge
+    // node has several equally-valid parent chains, so showing one is fine
+    // here — this is a label, not a completeness guarantee.
     const chain: Node[] = [];
-    const visited = new Set<string>();
+    const chainVisited = new Set<string>();
     let currentId: string | null = activeNode.id;
     while (currentId) {
-      if (visited.has(currentId)) break;
-      visited.add(currentId);
+      if (chainVisited.has(currentId)) break;
+      chainVisited.add(currentId);
       const n = nodes.find((n) => n.id === currentId);
       if (!n) break;
       chain.unshift(n);
       currentId = n.parentIds[0] ?? null;
     }
-    const ancestorNodes = chain.slice(0, -1);
     const ancestorPath = chain.map((n) => n.title);
-    const allMessages = chain.flatMap((n) => n.messages);
+
+    // Token accounting: the full ancestor closure, so a merge node's token
+    // total includes every branch that feeds into it, not just one chain.
+    const closureIds = getAncestorClosure(activeNode.id, (id) =>
+      nodes.find((n) => n.id === id)
+    );
+    const ancestorNodes = closureIds
+      .slice(0, -1)
+      .map((id) => nodes.find((n) => n.id === id))
+      .filter((n): n is Node => n !== undefined);
+    const allMessages = [...ancestorNodes.flatMap((n) => n.messages), ...activeNode.messages];
     const totalTokens = estimateMessagesTokens(allMessages);
     return { ancestorPath, ancestorNodes, totalTokens };
   }, [activeNode, nodes]);

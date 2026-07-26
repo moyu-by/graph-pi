@@ -13,7 +13,7 @@ import { useChatStore } from "@/stores/chat-store";
 export default function GraphPage() {
   const params = useParams();
   const graphId = params.id as string;
-  const { selectGraph } = useAgentContext();
+  const { selectGraph, isConnected } = useAgentContext();
   const graph = useGraphStore((s) => s.graph);
   const [showMerge, setShowMerge] = useState(false);
   const selectedNodeIds = useGraphStore((s) => s.selectedNodeIds);
@@ -123,6 +123,13 @@ export default function GraphPage() {
             )}
           </div>
         </header>
+
+        {!isConnected && (
+          <div className="mx-5 mb-2 px-3 py-2 bg-amber-muted rounded-lg text-amber text-xs flex items-center gap-2 border border-amber/10">
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0" style={{ background: "currentColor" }} />
+            <span>Connection lost, reconnecting…</span>
+          </div>
+        )}
 
         {error && (
           <div className="mx-5 mb-2 px-3 py-2 bg-red-muted rounded-lg text-red text-xs flex items-center justify-between border border-red/10">

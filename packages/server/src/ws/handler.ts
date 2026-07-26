@@ -1,6 +1,7 @@
 import { WebSocketServer, WebSocket } from "ws";
 import type { Server } from "http";
 import type { ClientMessage, ServerMessage, GraphState, ModelInfo } from "@graph-pi/shared";
+import { getAncestorClosure } from "@graph-pi/shared";
 import type { GraphStore } from "../db/graph-store.js";
 import { AgentService } from "../agent/agent-service.js";
 import { ContextBuilder } from "../agent/context-builder.js";
@@ -215,8 +216,8 @@ export class WebSocketHandler {
       return;
     }
 
-    const ancestorPath = this.store.getAncestorPath(nodeId);
-    const compressedNodes = ancestorPath
+    const ancestorClosure = getAncestorClosure(nodeId, (id) => this.store.getNode(id) ?? undefined);
+    const compressedNodes = ancestorClosure
       .map((id) => this.store.getNode(id)!)
       .filter((n) => n.isCompressed)
       .map((n) => n.title);
@@ -225,7 +226,7 @@ export class WebSocketHandler {
       type: "node_selected",
       node,
       context: {
-        nodeCount: ancestorPath.length,
+        nodeCount: ancestorClosure.length,
         totalMessages: node.messages.length,
         compressedNodes,
       },

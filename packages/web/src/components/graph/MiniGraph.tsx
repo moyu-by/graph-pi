@@ -19,6 +19,7 @@ interface LayoutNode {
 function layoutVertical(
   nodes: { id: string; parentIds: string[] }[]
 ): { layoutNodes: LayoutNode[]; width: number; height: number } {
+  const nodeById = new Map(nodes.map((n) => [n.id, n]));
   const childrenMap = new Map<string, string[]>();
   const roots: string[] = [];
 
@@ -35,19 +36,45 @@ function layoutVertical(
 
   const posMap = new Map<string, { x: number; y: number }>();
 
+  // A merge node's level is the deepest parent's level + 1, so it always
+  // renders below every parent it merges rather than whichever parent path
+  // happens to reach it first during placement.
+  const depthCache = new Map<string, number>();
+  function depthOf(nodeId: string): number {
+    const cached = depthCache.get(nodeId);
+    if (cached !== undefined) return cached;
+    const parentIds = nodeById.get(nodeId)?.parentIds ?? [];
+    const depth = parentIds.length === 0 ? 0 : Math.max(...parentIds.map(depthOf)) + 1;
+    depthCache.set(nodeId, depth);
+    return depth;
+  }
+
+  // Memoized: a node reachable through more than one parent (a merge) would
+  // otherwise have its whole subtree width recomputed from scratch once per
+  // incoming path — and every descendant of *that* would do the same for
+  // its own children, compounding quickly.
+  const widthCache = new Map<string, number>();
   function getSubtreeWidth(nodeId: string): number {
+    const cached = widthCache.get(nodeId);
+    if (cached !== undefined) return cached;
     const children = childrenMap.get(nodeId) || [];
-    if (children.length === 0) return 0;
     let w = 0;
     for (let i = 0; i < children.length; i++) {
       w += getSubtreeWidth(children[i]);
       if (i < children.length - 1) w += SIBLING_GAP;
     }
-    return Math.max(w, 0);
+    const width = Math.max(w, 0);
+    widthCache.set(nodeId, width);
+    return width;
   }
 
-  function placeNode(nodeId: string, centerX: number, level: number) {
-    const y = PAD_Y + level * LEVEL_GAP;
+  // Without `visited`, a merge node is positioned once per incoming parent
+  // edge (last write wins) and its children get re-placed that many times too.
+  const visited = new Set<string>();
+  function placeNode(nodeId: string, centerX: number) {
+    if (visited.has(nodeId)) return;
+    visited.add(nodeId);
+    const y = PAD_Y + depthOf(nodeId) * LEVEL_GAP;
     posMap.set(nodeId, { x: centerX, y });
 
     const children = childrenMap.get(nodeId) || [];
@@ -61,7 +88,7 @@ function layoutVertical(
     for (const child of children) {
       const childWidth = getSubtreeWidth(child);
       const childCenter = startX + childWidth / 2;
-      placeNode(child, childCenter, level + 1);
+      placeNode(child, childCenter);
       startX += childWidth + SIBLING_GAP;
     }
   }
@@ -78,7 +105,7 @@ function layoutVertical(
   for (const root of roots) {
     const rootWidth = getSubtreeWidth(root);
     const rootCenter = startX + rootWidth / 2;
-    placeNode(root, rootCenter, 0);
+    placeNode(root, rootCenter);
     startX += rootWidth + SIBLING_GAP;
   }
 

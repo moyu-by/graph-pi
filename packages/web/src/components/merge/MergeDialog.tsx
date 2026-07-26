@@ -2,14 +2,20 @@ import { useState } from "react";
 import { CompressToggle } from "./CompressToggle";
 import { useGraphStore } from "@/stores/graph-store";
 import { useAgentContext } from "@/hooks/useAgentContext";
+import type { Node } from "@graph-pi/shared";
 
 interface Props {
   onClose: () => void;
 }
 
 export function MergeDialog({ onClose }: Props) {
+  // Ordered by selectedNodeIds (accumulated in click order), not by the
+  // nodes array's own order — the server uses parentNodeIds order, and
+  // users expect it to reflect the order they clicked nodes in.
   const selectedNodes = useGraphStore((s) =>
-    s.nodes.filter((n) => s.selectedNodeIds.includes(n.id))
+    s.selectedNodeIds
+      .map((id) => s.nodes.find((n) => n.id === id))
+      .filter((n): n is Node => n !== undefined)
   );
   const clearSelection = useGraphStore((s) => s.clearSelection);
   const { send } = useAgentContext();

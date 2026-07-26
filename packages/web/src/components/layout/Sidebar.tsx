@@ -22,6 +22,10 @@ export function Sidebar({ collapsed, onToggle }: Props) {
   const currentGraphId = params.id;
   const [graphs, setGraphs] = useState<GraphSummary[]>([]);
   const [newTitle, setNewTitle] = useState("");
+  const [graphsLoading, setGraphsLoading] = useState(true);
+  const [graphsError, setGraphsError] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
   const nodes = useGraphStore((s) => s.nodes);
   const activeNodeId = useGraphStore((s) => s.activeNodeId);
   const { selectNode } = useAgentContext();
@@ -64,31 +68,46 @@ export function Sidebar({ collapsed, onToggle }: Props) {
 
   const graphApi = () => `${config.apiUrl}/api/graphs`;
 
-  useEffect(() => {
+  const loadGraphs = () => {
+    setGraphsLoading(true);
+    setGraphsError(null);
     fetch(graphApi())
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`Failed to load graphs (${r.status})`);
+        return r.json();
+      })
       .then(setGraphs)
-      .catch(() => {});
-  }, []);
-
-  const refreshGraphs = () => {
-    fetch(graphApi())
-      .then((r) => r.json())
-      .then(setGraphs)
-      .catch(() => {});
+      .catch((err) => {
+        setGraphsError(err instanceof Error ? err.message : "Failed to load graphs");
+      })
+      .finally(() => setGraphsLoading(false));
   };
 
+  useEffect(() => {
+    loadGraphs();
+  }, []);
+
   const createGraph = async () => {
+    if (creating) return;
     const title = newTitle.trim() || "Untitled Graph";
-    const res = await fetch(graphApi(), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title }),
-    });
-    const graph = await res.json();
-    setNewTitle("");
-    refreshGraphs();
-    router(`/graph/${graph.id}`);
+    setCreating(true);
+    setCreateError(null);
+    try {
+      const res = await fetch(graphApi(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      if (!res.ok) throw new Error(`Failed to create graph (${res.status})`);
+      const graph = await res.json();
+      setNewTitle("");
+      loadGraphs();
+      router(`/graph/${graph.id}`);
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : "Failed to create graph");
+    } finally {
+      setCreating(false);
+    }
   };
 
   if (collapsed) {
@@ -105,7 +124,27 @@ export function Sidebar({ collapsed, onToggle }: Props) {
           </svg>
         </button>
         <div className="w-4 h-px bg-border-subtle my-1" />
-        {graphs.map((g, i) => (
+        {graphsLoading && (
+          <span
+            className="w-1.5 h-1.5 rounded-full animate-pulse mt-1"
+            style={{ background: "var(--fg-faint)" }}
+            title="Loading graphs…"
+          />
+        )}
+        {!graphsLoading && graphsError && (
+          <button
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-red hover:bg-accent-muted transition-colors"
+            onClick={loadGraphs}
+            title={`${graphsError} — click to retry`}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="7" x2="12" y2="13"/>
+              <line x1="12" y1="16.5" x2="12" y2="16.5"/>
+            </svg>
+          </button>
+        )}
+        {!graphsLoading && !graphsError && graphs.map((g, i) => (
           <button
             key={g.id}
             className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-medium transition-all ${
@@ -175,9 +214,10 @@ export function Sidebar({ collapsed, onToggle }: Props) {
             onKeyDown={(e) => e.key === "Enter" && createGraph()}
           />
           <button
-            className="text-white px-2.5 py-1.5 rounded-lg text-xs transition-all hover:shadow-glow hover:scale-[1.02] active:scale-[0.98]"
+            className="text-white px-2.5 py-1.5 rounded-lg text-xs transition-all hover:shadow-glow hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-glow"
             style={{ background: "var(--gradient-primary)" }}
             onClick={createGraph}
+            disabled={creating}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="12" y1="5" x2="12" y2="19"/>
@@ -185,10 +225,24 @@ export function Sidebar({ collapsed, onToggle }: Props) {
             </svg>
           </button>
         </div>
+        {createError && (
+          <p className="text-[10px] text-red mt-1.5 px-0.5">{createError}</p>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto px-1.5">
-        {graphs.map((g, i) => {
+        {graphsLoading && (
+          <p className="text-[11px] text-fg-muted px-2.5 py-2">Loading graphs…</p>
+        )}
+        {!graphsLoading && graphsError && (
+          <div className="px-2.5 py-2">
+            <p className="text-[11px] text-red mb-1">{graphsError}</p>
+            <button className="text-[11px] text-accent hover:underline" onClick={loadGraphs}>
+              Retry
+            </button>
+          </div>
+        )}
+        {!graphsLoading && !graphsError && graphs.map((g, i) => {
           const color = ["var(--accent)", "var(--blue)", "var(--green)", "var(--cyan)", "var(--pink)", "var(--teal)"][i % 6];
           return (
             <div key={g.id}>

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useGraphStore } from "@/stores/graph-store";
 import { useAgentContext } from "@/hooks/useAgentContext";
 import { estimateMessagesTokens, formatTokens } from "@/lib/tokens";
@@ -11,6 +11,14 @@ export function NodeDetail() {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState("");
   const { send, compressNode, deleteNode } = useAgentContext();
+
+  // The title input isn't unmounted on node switch (no `key`), so without
+  // this it's possible to enter edit mode on node A, click node B, and have
+  // handleSaveTitle later persist A's edited text onto B.
+  useEffect(() => {
+    setEditing(false);
+    setTitle(activeNode?.title ?? "");
+  }, [activeNode?.id]);
 
   const nodeTokens = useMemo(
     () => (activeNode ? estimateMessagesTokens(activeNode.messages) : 0),
@@ -37,6 +45,11 @@ export function NodeDetail() {
     setEditing(false);
   };
 
+  const handleCancelEdit = () => {
+    setTitle(activeNode.title);
+    setEditing(false);
+  };
+
   const handleCompress = () => {
     if (!activeNode.isCompressed && activeNode.messages.length > 0) {
       compressNode(activeNode.id);
@@ -60,7 +73,10 @@ export function NodeDetail() {
                 className="bg-bg-elevated border border-border-default rounded-lg px-2.5 py-1.5 text-xs text-fg-primary flex-1 focus:border-accent focus:shadow-glow"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSaveTitle()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSaveTitle();
+                  else if (e.key === "Escape") handleCancelEdit();
+                }}
                 autoFocus
               />
               <button

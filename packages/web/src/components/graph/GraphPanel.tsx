@@ -26,6 +26,7 @@ function layoutTree(
   nodes: { id: string; parentIds: string[] }[]
 ): Map<string, { x: number; y: number }> {
   const positions = new Map<string, { x: number; y: number }>();
+  const nodeById = new Map(nodes.map((n) => [n.id, n]));
   const childrenMap = new Map<string, string[]>();
   const roots: string[] = [];
 
@@ -40,18 +41,37 @@ function layoutTree(
     }
   }
 
+  // A merge node (multiple parentIds) is a child of more than one entry in
+  // childrenMap, so its depth is the deepest parent + 1 — never shallower
+  // than any single parent path happens to suggest.
+  const depthCache = new Map<string, number>();
+  function depthOf(nodeId: string): number {
+    const cached = depthCache.get(nodeId);
+    if (cached !== undefined) return cached;
+    const parentIds = nodeById.get(nodeId)?.parentIds ?? [];
+    const depth = parentIds.length === 0 ? 0 : Math.max(...parentIds.map(depthOf)) + 1;
+    depthCache.set(nodeId, depth);
+    return depth;
+  }
+
+  // Without `visited`, a merge node (and everything below it) is reachable
+  // through every one of its parents and gets placed — and counted against
+  // the shared yOffset counter — once per incoming path.
   let yOffset = 0;
-  function placeTree(nodeId: string, x: number) {
-    positions.set(nodeId, { x, y: yOffset });
+  const visited = new Set<string>();
+  function placeTree(nodeId: string) {
+    if (visited.has(nodeId)) return;
+    visited.add(nodeId);
+    positions.set(nodeId, { x: depthOf(nodeId) * POSITION_OFFSET_X, y: yOffset });
     yOffset += POSITION_OFFSET_Y;
     const children = childrenMap.get(nodeId) || [];
     for (const child of children) {
-      placeTree(child, x + POSITION_OFFSET_X);
+      placeTree(child);
     }
   }
 
   for (const root of roots) {
-    placeTree(root, 0);
+    placeTree(root);
   }
 
   return positions;

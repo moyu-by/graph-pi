@@ -53,7 +53,7 @@ packages/
 - **传输**: Express REST（图谱/节点 CRUD）+ WebSocket（实时聊天）
 - **AI 引擎**: [`@earendil-works/pi-agent-core`](https://www.npmjs.com/package/@earendil-works/pi-agent-core) — 模块化 LLM Agent 运行时
 - **AI 供应商**: [`@earendil-works/pi-ai`](https://www.npmjs.com/package/@earendil-works/pi-ai) — 多供应商模型目录（Anthropic、OpenAI、Google、DeepSeek、xAI、Groq、OpenRouter、Xiaomi 等 30+ 个）
-- **数据库**: SQLite（通过 better-sqlite3）
+- **数据库**: SQLite（通过 Node.js 内置 `node:sqlite` 模块）
 
 ## 使用到的库与项目
 
@@ -70,7 +70,7 @@ packages/
 | [`ws`](https://github.com/websockets/ws) | WebSocket 服务端 |
 | [react-router-dom](https://reactrouter.com) 6 | 客户端路由 |
 | [react-markdown](https://github.com/remarkjs/react-markdown) | 聊天消息中的 Markdown 渲染 |
-| [SQLite](https://sqlite.org) | 嵌入式数据库（通过 better-sqlite3）|
+| [SQLite](https://sqlite.org) | 嵌入式数据库（通过 Node.js 内置 `node:sqlite` 模块，非第三方依赖）|
 ## 快速开始
 
 包名：**`graph-pi`**
@@ -144,8 +144,28 @@ cp .env.example .env
 | `PORT` | `3001` | API 服务端口 |
 | `WEB_PORT` | `3000` | Web 界面端口 |
 | `DB_PATH` | `./data/graph-pi.db` | SQLite 数据库路径 |
+| `HOST` | `127.0.0.1` | 服务器绑定地址,仅本机可访问;设为 `0.0.0.0` 可开放局域网访问 |
+| `ALLOWED_ORIGIN` | (空) | 额外允许跨域访问 API 的来源,逗号分隔,配合 `HOST=0.0.0.0` 的局域网场景使用 |
 | `LLM_PROVIDER` | `xiaomi` | 默认模型供应商 |
 | `LLM_MODEL` | `mimo-v2.5` | 默认模型 ID |
+
+### 局域网访问与安全提示
+
+默认情况下 Graph PI **只能从本机访问**(服务器绑定在 `127.0.0.1`,且只信任 `http://localhost:*` / `http://127.0.0.1:*` 发起的跨域请求)。这是刻意的安全默认值:这个服务没有身份验证,任何能连到它的人都可以读写你的对话记录,并消耗你在 `.env` 里配置的模型 API Key 额度。
+
+如果你确实需要局域网访问(例如服务跑在电脑上,想用手机连过去用),显式设置:
+
+```bash
+HOST=0.0.0.0 npm run graph-pi
+```
+
+并在需要从局域网内某个具体地址的浏览器打开 Web UI 时,把该地址加入 `ALLOWED_ORIGIN`(否则 API 请求会被浏览器的 CORS 检查拦截):
+
+```bash
+HOST=0.0.0.0 ALLOWED_ORIGIN=http://192.168.1.23:3000 npm run graph-pi
+```
+
+**请只在你信任的网络(如家庭局域网)中这样做** —— 打开 `0.0.0.0` 后,同一网络下的任何设备都能访问你的图谱数据和模型额度,公共/办公网络下这样做有被滥用的风险。
 
 ### API Key 配置
 

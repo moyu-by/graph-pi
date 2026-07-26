@@ -11,6 +11,7 @@ interface AgentContextValue {
   deleteNode: (nodeId: string) => void;
   setActiveNode: (nodeId: string) => void;
   send: (msg: ClientMessage) => void;
+  isConnected: boolean;
 }
 
 const AgentContext = createContext<AgentContextValue | null>(null);

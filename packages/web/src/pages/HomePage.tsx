@@ -14,23 +14,49 @@ export default function HomePage() {
   const [graphs, setGraphs] = useState<GraphSummary[]>([]);
   const [newTitle, setNewTitle] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [graphsLoading, setGraphsLoading] = useState(true);
+  const [graphsError, setGraphsError] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  const loadGraphs = () => {
+    setGraphsLoading(true);
+    setGraphsError(null);
+    fetch(`${config.apiUrl}/api/graphs`)
+      .then((r) => {
+        if (!r.ok) throw new Error(`Failed to load graphs (${r.status})`);
+        return r.json();
+      })
+      .then(setGraphs)
+      .catch((err) => {
+        setGraphsError(err instanceof Error ? err.message : "Failed to load graphs");
+      })
+      .finally(() => setGraphsLoading(false));
+  };
 
   useEffect(() => {
-    fetch(`${config.apiUrl}/api/graphs`)
-      .then((r) => r.json())
-      .then(setGraphs)
-      .catch(() => {});
+    loadGraphs();
   }, []);
 
   const createGraph = async () => {
+    if (creating) return;
     const title = newTitle.trim() || "Untitled Graph";
-    const res = await fetch(`${config.apiUrl}/api/graphs`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title }),
-    });
-    const graph = await res.json();
-    router(`/graph/${graph.id}`);
+    setCreating(true);
+    setCreateError(null);
+    try {
+      const res = await fetch(`${config.apiUrl}/api/graphs`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      if (!res.ok) throw new Error(`Failed to create graph (${res.status})`);
+      const graph = await res.json();
+      router(`/graph/${graph.id}`);
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : "Failed to create graph");
+    } finally {
+      setCreating(false);
+    }
   };
 
   return (
@@ -75,16 +101,36 @@ export default function HomePage() {
             onKeyDown={(e) => e.key === "Enter" && createGraph()}
           />
           <button
-            className="px-5 py-2.5 rounded-xl text-sm font-medium text-white transition-all shadow-glow hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
+            className="px-5 py-2.5 rounded-xl text-sm font-medium text-white transition-all shadow-glow hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-glow"
             style={{ background: "var(--gradient-primary)" }}
             onClick={createGraph}
+            disabled={creating}
           >
-            Create
+            {creating ? "Creating…" : "Create"}
           </button>
         </div>
+        {createError && (
+          <p className="text-xs text-red text-center max-w-sm -mt-2">{createError}</p>
+        )}
 
         <div className="w-full max-w-md mt-4">
-          {graphs.length === 0 && (
+          {graphsLoading && (
+            <div className="text-center mt-8">
+              <p className="text-xs text-fg-muted">Loading graphs…</p>
+            </div>
+          )}
+          {!graphsLoading && graphsError && (
+            <div className="text-center mt-8">
+              <p className="text-xs text-red mb-2">{graphsError}</p>
+              <button
+                className="text-xs text-accent hover:underline"
+                onClick={loadGraphs}
+              >
+                Retry
+              </button>
+            </div>
+          )}
+          {!graphsLoading && !graphsError && graphs.length === 0 && (
             <div className="text-center mt-8">
               <div className="w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center bg-bg-elevated/50 border border-border-subtle">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-fg-muted">
@@ -96,7 +142,7 @@ export default function HomePage() {
               <p className="text-xs text-fg-muted">Create your first graph to get started</p>
             </div>
           )}
-          {graphs.map((g, i) => (
+          {!graphsLoading && !graphsError && graphs.map((g, i) => (
             <div
               key={g.id}
               className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all group hover:bg-bg-elevated/60 hover:border-border-default border border-transparent hover:shadow-sm mb-1"

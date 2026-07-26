@@ -12,6 +12,9 @@ export function ChatInput() {
   const { sendMessage, createBranch } = useAgentContext();
 
   useEffect(() => {
+    // Node switched: drop any unsent draft for the previous node and focus
+    // the input for the newly active one.
+    setInput("");
     inputRef.current?.focus();
   }, [activeNodeId]);
 
@@ -19,6 +22,15 @@ export function ChatInput() {
     const trimmed = input.trim();
     if (!trimmed || !activeNodeId || isLocked || isStreaming) return;
     setInput("");
+    // Optimistically show the user's own message immediately — the server
+    // persists it but never echoes it back over the message stream, so
+    // without this the message only appears after a manual node refresh.
+    useChatStore.getState().addMessage({
+      id: crypto.randomUUID(),
+      role: "user",
+      content: [{ type: "text", text: trimmed }],
+      timestamp: Date.now(),
+    });
     sendMessage(activeNodeId, trimmed);
   };
 

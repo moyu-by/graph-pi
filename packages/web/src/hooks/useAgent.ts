@@ -53,10 +53,15 @@ export function useAgent() {
         }
         case "branch_created": {
           useGraphStore.getState().setActiveNode(msg.node.id);
+          // Mirror the select_node round-trip a manual node click triggers,
+          // so chatStore.messages/isLocked reflect the new (empty) branch
+          // instead of staying on the old node's data.
+          send({ type: "select_node", nodeId: msg.node.id });
           break;
         }
         case "merge_created": {
           useGraphStore.getState().setActiveNode(msg.newNode.id);
+          send({ type: "select_node", nodeId: msg.newNode.id });
           break;
         }
         case "node_compressed": {
@@ -94,11 +99,19 @@ export function useAgent() {
     []
   );
 
-  const { send } = useWebSocket(handleMessage);
-
+  // Declared before the useWebSocket() call below (which needs it as an
+  // argument) even though it calls `send`, which that same call produces.
+  // This is safe: `send`'s identity never changes across renders (see
+  // useWebSocket's own useCallback(..., [])), and this callback's body only
+  // runs later, asynchronously, on an actual reconnect — by then `send` is
+  // long assigned.
   const onReconnect = useCallback(() => {
+    const graphId = useGraphStore.getState().graph?.id;
+    if (graphId) send({ type: "select_graph", graphId });
     send({ type: "list_models" });
-  }, [send]);
+  }, []);
+
+  const { send, isConnected } = useWebSocket(handleMessage, onReconnect);
 
   useEffect(() => {
     send({ type: "list_models" });
@@ -150,5 +163,6 @@ export function useAgent() {
     deleteNode,
     setActiveNode,
     send,
+    isConnected,
   };
 }

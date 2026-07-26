@@ -15,7 +15,6 @@ interface ChatState {
   setIsStreaming: (v: boolean) => void;
   setIsLocked: (v: boolean) => void;
   setError: (err: string | null) => void;
-  reset: () => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -33,12 +32,4 @@ export const useChatStore = create<ChatState>((set) => ({
   setIsStreaming: (isStreaming) => set({ isStreaming }),
   setIsLocked: (isLocked) => set({ isLocked }),
   setError: (error) => set({ error }),
-  reset: () =>
-    set({
-      messages: [],
-      streamingMessage: "",
-      isStreaming: false,
-      isLocked: false,
-      error: null,
-    }),
 }));

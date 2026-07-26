@@ -1,5 +1,6 @@
 import { useGraphStore } from "@/stores/graph-store";
 import { useAgentContext } from "@/hooks/useAgentContext";
+import { findSiblings } from "@graph-pi/shared";
 
 export function BranchSelector() {
   const activeNodeId = useGraphStore((s) => s.activeNodeId);
@@ -9,17 +10,10 @@ export function BranchSelector() {
 
   if (!activeNode) return null;
 
-  const parentNode = activeNode.parentIds.length > 0
-    ? nodes.find((n) => n.id === activeNode.parentIds[0])
-    : null;
-
-  const branchSiblings = parentNode
-    ? nodes.filter(
-        (n) =>
-          n.parentIds.includes(parentNode.id) &&
-          n.id !== activeNode.id
-      )
-    : [];
+  // Shares-any-parent siblings, not just "same single parent" — a node can
+  // have multiple parents (merges), so this covers branches reachable
+  // through any of them.
+  const branchSiblings = findSiblings(activeNode.id, nodes);
 
   if (branchSiblings.length === 0) return null;
 

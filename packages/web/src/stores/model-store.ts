@@ -36,7 +36,12 @@ export const useModelStore = create<ModelState>((set, get) => ({
   providers: [],
   currentProvider: persisted.provider,
   currentModelId: persisted.modelId,
-  loading: false,
+  // Starts true: the app unconditionally requests the model list on mount
+  // (see useAgent.ts), and until that first response arrives we want the UI
+  // to show a loading state rather than a misleading "no models match" empty
+  // state. useAgent.ts flips this to false once `models_list` (or an error)
+  // is received.
+  loading: true,
   error: null,
   setProviders: (providers) => set({ providers }),
   setCurrent: (currentProvider, currentModelId) => {
