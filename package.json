@@ -1,6 +1,6 @@
 {
   "name": "graph-pi",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Graph-based conversation management for AI agents — a vibe-coding product",
   "type": "module",
   "bin": {
