@@ -2,9 +2,16 @@ import { config } from "dotenv";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 
-// Load .env from monorepo root
 const __dirname = dirname(fileURLToPath(import.meta.url));
-config({ path: resolve(__dirname, "../../../.env") });
+
+// Try loading .env from multiple locations
+const envPaths = [
+  resolve(__dirname, "../../../.env"),
+  resolve(__dirname, "../../.env"),
+  resolve(__dirname, "../.env"),
+  resolve(process.cwd(), ".env"),
+];
+for (const p of envPaths) config({ path: p });
 
 import express from "express";
 import { createServer } from "http";
@@ -74,6 +81,16 @@ app.get("/api/nodes/:id", (req, res) => {
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
+
+// Serve pre-built web UI if available
+const webDist = process.env.WEB_DIST;
+if (webDist) {
+  app.use(express.static(webDist));
+  app.get("*", (_req, res) => {
+    res.sendFile(resolve(webDist, "index.html"));
+  });
+  console.log(`  → Serving web UI from ${webDist}`);
+}
 
 server.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);

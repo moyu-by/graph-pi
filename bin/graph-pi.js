@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { spawn, execSync } from "child_process";
+import { spawn } from "child_process";
 import { createServer } from "net";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
@@ -7,9 +7,8 @@ import { config } from "dotenv";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
-const SHARED = resolve(ROOT, "packages/shared");
-const SERVER = resolve(ROOT, "packages/server");
-const WEB = resolve(ROOT, "packages/web");
+const SERVER = resolve(ROOT, "packages/server/dist");
+const WEB_DIST = resolve(ROOT, "packages/web/dist");
 
 config({ path: resolve(ROOT, ".env") });
 
@@ -42,27 +41,47 @@ async function main() {
   console.log(`  Web UI     → http://localhost:${webPort}`);
   console.log(`  ${"─".repeat(40)}\n`);
 
-  // Build shared types if needed
-  try { execSync("npx tsc", { cwd: SHARED, stdio: "pipe" }); } catch {}
+  const serverEnv = {
+    ...process.env,
+    PORT: String(serverPort),
+    WEB_PORT: String(webPort),
+    WEB_DIST: WEB_DIST,
+  };
 
-  // Start server
-  const server = spawn("npx", ["tsx", "watch", "src/index.ts"], {
-    cwd: SERVER,
-    stdio: "inherit",
-    env: { ...process.env, PORT: String(serverPort) },
-  });
+  let server;
+  if (process.env.NODE_ENV === "development") {
+    server = spawn("npx", ["tsx", "watch", "src/index.ts"], {
+      cwd: resolve(ROOT, "packages/server"),
+      stdio: "inherit",
+      env: serverEnv,
+    });
+  } else {
+    server = spawn("node", ["dist/index.js"], {
+      cwd: resolve(ROOT, "packages/server"),
+      stdio: "inherit",
+      env: serverEnv,
+    });
+  }
 
-  // Start web dev server with explicit port and API proxy
-  const web = spawn("npx", [
-    "vite", "--port", String(webPort),
-    ...(serverPort !== 3001 ? ["--proxy-api", `http://localhost:${serverPort}`] : []),
-  ], {
-    cwd: WEB,
-    stdio: "inherit",
-    env: { ...process.env, VITE_API_URL: `http://localhost:${serverPort}`, VITE_WS_URL: `ws://localhost:${serverPort}` },
-  });
+  // In production mode the Express server also serves the pre-built web UI,
+  // so we skip the separate Vite dev server.
+  // In development mode, start Vite as before.
+  let web;
+  if (process.env.NODE_ENV === "development") {
+    web = spawn("npx", ["vite", "--port", String(webPort), "--strictPort"], {
+      cwd: resolve(ROOT, "packages/web"),
+      stdio: "inherit",
+      env: { ...process.env, VITE_API_URL: `http://localhost:${serverPort}`, VITE_WS_URL: `ws://localhost:${serverPort}` },
+    });
+  } else {
+    console.log(`  → Serving web UI from Express at http://localhost:${serverPort}`);
+  }
 
-  const cleanup = () => { server.kill(); web.kill(); process.exit(0); };
+  const cleanup = () => {
+    server?.kill();
+    web?.kill();
+    process.exit(0);
+  };
   process.on("SIGINT", cleanup);
   process.on("SIGTERM", cleanup);
 }
