@@ -43,11 +43,14 @@ export function ChatInput() {
 
   const handleBranchNew = () => {
     if (!activeNodeId) return;
-    const node = useGraphStore.getState().nodes.find(
-      (n) => n.id === activeNodeId
-    );
-    if (!node || node.messages.length === 0) return;
-    const lastMsgId = node.messages[node.messages.length - 1].id;
+    // Read from chatStore, not graphStore's copy of the node — chatStore is
+    // updated optimistically the instant a message is sent, while graphStore
+    // only catches up once the server broadcasts state after the full turn
+    // completes. Using the stale graphStore copy here silently no-ops if the
+    // user branches within that window (graphStore still shows 0 messages).
+    const messages = useChatStore.getState().messages;
+    if (messages.length === 0) return;
+    const lastMsgId = messages[messages.length - 1].id;
     createBranch(activeNodeId, lastMsgId);
   };
 
@@ -69,7 +72,7 @@ export function ChatInput() {
               onKeyDown={handleKeyDown}
               disabled={isLocked || isStreaming}
             />
-            {!isLocked && (
+            {!isLocked && !isStreaming && (
               <button
                 onClick={handleBranchNew}
                 className="absolute right-2 bottom-2.5 p-1.5 text-fg-muted hover:text-cyan rounded-md hover:bg-cyan-muted transition-colors"
