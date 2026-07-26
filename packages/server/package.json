@@ -3,24 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js"
-  },
   "dependencies": {
     "@earendil-works/pi-agent-core": "^0.82.1",
     "@earendil-works/pi-ai": "^0.82.1",
-    "@graph-pi/shared": "*",
     "dotenv": "^17.4.2",
     "express": "^4.21.0",
     "uuid": "^10.0.0",
     "ws": "^8.18.0"
-  },
-  "devDependencies": {
-    "@types/express": "^5.0.0",
-    "@types/uuid": "^10.0.0",
-    "@types/ws": "^8.5.13",
-    "tsx": "^4.19.0"
   }
 }
