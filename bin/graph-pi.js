@@ -2,11 +2,16 @@
 import { spawn } from "child_process";
 import { createServer } from "net";
 import { resolve, dirname } from "path";
+import { createRequire } from "module";
 import { fileURLToPath } from "url";
 import { config } from "dotenv";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
+
+// Resolve tsx binary via module lookup (handles npm hoisting correctly)
+const _require = createRequire(import.meta.url);
+const TSX = _require.resolve("tsx/dist/cli.mjs");
 
 config({ path: resolve(ROOT, ".env") });
 
@@ -41,7 +46,7 @@ async function main() {
   console.log(`  Web UI     → http://localhost:${serverPort}`);
   console.log(`  ${"─".repeat(40)}\n`);
 
-  const server = spawn("npx", ["tsx", resolve(ROOT, "packages/server/src/index.ts")], {
+  const server = spawn(process.execPath, [TSX, resolve(ROOT, "packages/server/src/index.ts")], {
     stdio: "inherit",
     env: {
       ...process.env,
