@@ -216,4 +216,10 @@ graph-pi/
 
 ## 许可证
 
-MIT
+本项目基于 MIT 许可证开源，详见 [LICENSE](./LICENSE)。
+
+本软件使用了以下第三方开源库，分别遵循各自的许可证条款（详见 [THIRD-PARTY-LICENSES](./THIRD-PARTY-LICENSES)）：
+
+- **MIT**: React, Express, Vite, Tailwind CSS, Zustand, React Flow, pi-ai, pi-agent-core 等
+- **BSD-2-Clause**: dotenv
+- **Apache-2.0**: TypeScript
