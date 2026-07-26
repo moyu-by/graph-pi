@@ -71,54 +71,49 @@ packages/
 | [react-router-dom](https://reactrouter.com) 6 | 客户端路由 |
 | [react-markdown](https://github.com/remarkjs/react-markdown) | 聊天消息中的 Markdown 渲染 |
 | [SQLite](https://sqlite.org) | 嵌入式数据库（通过 better-sqlite3）|
-
 ## 快速开始
 
-### 安装
+包名：**`graph-pi`**
+
+### 一行命令启动（无需安装）
 
 ```bash
-# 克隆或进入项目目录
-cd graph-pi
-
-# 安装所有依赖（monorepo workspaces）
-npm install
+npx graph-pi
 ```
 
-### 一键启动（推荐）
+npx 会自动下载并运行最新版本。终端输出类似：
+
+```
+  ⚡ Graph PI v0.1.2
+  ────────────────────────────────────────
+  Server API → http://localhost:3002
+  Web UI     → http://localhost:3002
+  ────────────────────────────────────────
+```
+
+打开输出的地址即可使用。
+
+### 全局安装
 
 ```bash
+npm install -g graph-pi
+graph-pi
+```
+
+### 本地开发
+
+```bash
+# 克隆仓库后安装依赖
+git clone https://github.com/moyu-by/graph-pi.git
+cd graph-pi
+npm install
+
+# 构建共享类型和前端
+npm run build
+
+# 通过本地 CLI 启动
 npm run graph-pi
 ```
-
-此命令会：
-1. 自动检测端口是否被占用 — **若 3000/3001 被占用会自动尝试后续端口**
-2. 构建共享类型
-3. 同时拉起后端 API 服务 + 前端开发服务
-4. 终端输出类似：
-
-```
-  ⚡ Graph PI v0.1.0
-  ────────────────────────────────────────
-  Server API → http://localhost:3001
-  Web UI     → http://localhost:3000
-  ────────────────────────────────────────
-```
-
-打开终端输出的 Web UI 地址即可使用。
-
-### 分别启动（开发用）
-
-```bash
-# 终端 1 — 后端 API
-cd packages/server
-npx tsc
-node dist/index.js
-
-# 终端 2 — 前端开发服务
-cd packages/web
-npm run dev
-```
-
 ## 端口占用怎么办？
 
 `npm run graph-pi` 脚本会在以下端口依次尝试，直到找到空闲端口：
