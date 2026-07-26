@@ -1,0 +1,56 @@
+{
+  "name": "graph-pi",
+  "version": "0.1.0",
+  "description": "Graph-based conversation management for AI agents — a vibe-coding product",
+  "type": "module",
+  "bin": {
+    "graph-pi": "./bin/graph-pi.js"
+  },
+  "workspaces": [
+    "packages/shared",
+    "packages/server",
+    "packages/web"
+  ],
+  "scripts": {
+    "graph-pi": "node bin/graph-pi.js",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:web\"",
+    "dev:server": "npm run dev -w packages/server",
+    "dev:web": "npm run dev -w packages/web",
+    "build": "npm run build -w packages/shared && npm run build -w packages/server && npm run build -w packages/web",
+    "typecheck": "tsc -b",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "graph",
+    "conversation",
+    "vibecoding",
+    "chat",
+    "llm"
+  ],
+  "license": "MIT",
+  "author": "",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "dotenv": "^17.4.2",
+    "typescript": "^5.7.0",
+    "vite": "^5.4.0",
+    "tsx": "^4.19.0"
+  },
+  "dependencies": {
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
+  },
+  "allowScripts": {
+    "better-sqlite3": true,
+    "esbuild": true
+  }
+}
