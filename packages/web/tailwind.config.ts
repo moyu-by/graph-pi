@@ -80,6 +80,9 @@ const config: Config = {
         normal: "200ms",
         slow: "300ms",
       },
+      animation: {
+        "glow-pulse": "glow-pulse 2.5s ease-in-out infinite",
+      },
       boxShadow: {
         xs: "var(--shadow-xs)",
         sm: "var(--shadow-sm)",

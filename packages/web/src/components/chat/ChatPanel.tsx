@@ -51,20 +51,76 @@ export function ChatPanel() {
   if (!activeNodeId || !activeNode) {
     return (
       <div className="flex-1 flex items-center justify-center bg-bg-primary relative overflow-hidden">
+        {/* Ambient background glows */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full opacity-10 blur-3xl"
-            style={{ background: "radial-gradient(circle, var(--accent) 0%, transparent 70%)" }} />
-          <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full opacity-10 blur-3xl"
+          <div className="absolute top-1/5 left-1/3 w-80 h-80 rounded-full opacity-10 blur-3xl"
+            style={{ background: "radial-gradient(circle, var(--purple) 0%, transparent 70%)" }} />
+          <div className="absolute bottom-1/5 right-1/3 w-72 h-72 rounded-full opacity-10 blur-3xl"
             style={{ background: "radial-gradient(circle, var(--blue) 0%, transparent 70%)" }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full opacity-8 blur-3xl"
+            style={{ background: "radial-gradient(circle, var(--accent) 0%, transparent 70%)" }} />
         </div>
-        <div className="text-center relative z-10">
-          <div className="w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center border border-border-subtle bg-bg-elevated/50">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-fg-muted">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+
+        <div className="text-center relative z-10 select-none">
+          {/* Graph network illustration */}
+          <div className="relative w-48 h-48 mx-auto mb-6">
+            {/* Edge lines */}
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 192 192" fill="none">
+              {/* Outer ring edges — connect satellites to center */}
+              <circle cx="96" cy="96" r="72" stroke="var(--border-subtle)" strokeWidth="0.5" strokeDasharray="3 4" />
+              <circle cx="96" cy="96" r="48" stroke="var(--border-subtle)" strokeWidth="0.8" strokeDasharray="2 5" />
+              {/* Radial edges from outer satellites to mid ring */}
+              <line x1="96" y1="24" x2="96" y2="48" stroke="var(--border-default)" strokeWidth="1" opacity="0.6" />
+              <line x1="158.5" y1="58.5" x2="130" y2="72" stroke="var(--border-default)" strokeWidth="1" opacity="0.6" />
+              <line x1="158.5" y1="133.5" x2="130" y2="120" stroke="var(--border-default)" strokeWidth="1" opacity="0.6" />
+              <line x1="96" y1="168" x2="96" y2="144" stroke="var(--border-default)" strokeWidth="1" opacity="0.6" />
+              <line x1="33.5" y1="133.5" x2="62" y2="120" stroke="var(--border-default)" strokeWidth="1" opacity="0.6" />
+              <line x1="33.5" y1="58.5" x2="62" y2="72" stroke="var(--border-default)" strokeWidth="1" opacity="0.6" />
+              {/* Cross edges on inner ring */}
+              <line x1="48" y1="96" x2="72" y2="96" stroke="var(--border-default)" strokeWidth="0.8" opacity="0.4" />
+              <line x1="120" y1="96" x2="144" y2="96" stroke="var(--border-default)" strokeWidth="0.8" opacity="0.4" />
+              <line x1="96" y1="138" x2="96" y2="124" stroke="var(--border-default)" strokeWidth="0.8" opacity="0.4" />
+              <line x1="96" y1="68" x2="96" y2="54" stroke="var(--border-default)" strokeWidth="0.8" opacity="0.4" />
             </svg>
+
+            {/* Outer satellite nodes */}
+            <div className="absolute top-[8px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full animate-glow-pulse"
+              style={{ background: "var(--purple)", boxShadow: "0 0 6px var(--purple)" }} />
+            <div className="absolute top-[52px] right-[8px] w-2.5 h-2.5 rounded-full animate-glow-pulse"
+              style={{ background: "var(--blue)", boxShadow: "0 0 6px var(--blue)", animationDelay: "0.3s" }} />
+            <div className="absolute bottom-[52px] right-[8px] w-2.5 h-2.5 rounded-full animate-glow-pulse"
+              style={{ background: "var(--cyan)", boxShadow: "0 0 6px var(--cyan)", animationDelay: "0.6s" }} />
+            <div className="absolute bottom-[8px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full animate-glow-pulse"
+              style={{ background: "var(--green)", boxShadow: "0 0 6px var(--green)", animationDelay: "0.9s" }} />
+            <div className="absolute bottom-[52px] left-[8px] w-2.5 h-2.5 rounded-full animate-glow-pulse"
+              style={{ background: "var(--cyan)", boxShadow: "0 0 6px var(--cyan)", animationDelay: "1.2s" }} />
+            <div className="absolute top-[52px] left-[8px] w-2.5 h-2.5 rounded-full animate-glow-pulse"
+              style={{ background: "var(--blue)", boxShadow: "0 0 6px var(--blue)", animationDelay: "0.15s" }} />
+
+            {/* Inner ring nodes */}
+            <div className="absolute top-[62px] left-1/2 -translate-x-1/2 w-2 h-2 rounded-full"
+              style={{ background: "var(--accent)", boxShadow: "0 0 4px var(--accent)" }} />
+            <div className="absolute top-[88px] right-[62px] w-2 h-2 rounded-full"
+              style={{ background: "var(--purple)", boxShadow: "0 0 4px var(--purple)" }} />
+            <div className="absolute top-[88px] left-[62px] w-2 h-2 rounded-full"
+              style={{ background: "var(--purple)", boxShadow: "0 0 4px var(--purple)" }} />
+            <div className="absolute bottom-[62px] left-1/2 -translate-x-1/2 w-2 h-2 rounded-full"
+              style={{ background: "var(--accent)", boxShadow: "0 0 4px var(--accent)" }} />
+
+            {/* Central node — π symbol */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-2xl flex items-center justify-center animate-glow-pulse shadow-glow"
+              style={{ background: "var(--gradient-primary)" }}>
+              <span className="text-white text-2xl font-bold font-mono leading-none" style={{ fontFamily: "var(--font-mono)" }}>π</span>
+            </div>
           </div>
-          <p className="text-sm text-fg-secondary mb-1">Select a node</p>
-          <p className="text-xs text-fg-faint">Click a node in the graph to start chatting</p>
+
+          <h2 className="text-base font-semibold bg-clip-text text-transparent mb-1"
+            style={{ backgroundImage: "var(--gradient-primary)" }}>
+            Graph PI
+          </h2>
+          <p className="text-xs text-fg-faint max-w-xs mx-auto leading-relaxed">
+            Click a node in the sidebar or graph to start chatting
+          </p>
         </div>
       </div>
     );
