@@ -37,11 +37,8 @@ async function serveWeb() {
 
   const WEB_DIST = resolve(ROOT, "packages/web/dist");
 
-  console.log(`\n  ⚡ Graph PI v${process.env.npm_package_version || "0.1.0"}`);
-  console.log(`  ${"─".repeat(40)}`);
-  console.log(`  Server API → http://localhost:${serverPort}`);
-  console.log(`  Web UI     → http://localhost:${serverPort}`);
-  console.log(`  ${"─".repeat(40)}\n`);
+      console.log(`  Server API → http://localhost:${serverPort}`);
+      console.log(`  Web UI     → http://localhost:${serverPort}`);
 
   const server = spawn(process.execPath, [resolve(ROOT, "packages/server/dist/index.js")], {
     stdio: "inherit",
