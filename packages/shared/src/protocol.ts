@@ -9,6 +9,8 @@ export type ClientMessage =
   | { type: "compress_node"; nodeId: string }
   | { type: "delete_node"; nodeId: string }
   | { type: "update_node_title"; nodeId: string; title: string }
+  | { type: "delete_graph"; graphId: string }
+  | { type: "update_graph_title"; graphId: string; title: string }
   | { type: "list_models" }
   | { type: "set_model"; provider: string; modelId: string };
 

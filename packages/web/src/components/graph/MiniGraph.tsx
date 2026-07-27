@@ -1,7 +1,8 @@
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import { useGraphStore } from "@/stores/graph-store";
 import { useAgentContext } from "@/hooks/useAgentContext";
 import { Markdown } from "@/components/ui/Markdown";
+import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import type { Node } from "@graph-pi/shared";
 
 const DOT_R = 5;
@@ -137,11 +138,20 @@ export function MiniGraph() {
   const toggleNodeSelection = useGraphStore((s) => s.toggleNodeSelection);
   const setPreviewNode = useGraphStore((s) => s.setPreviewNode);
   const previewNodeId = useGraphStore((s) => s.previewNodeId);
-  const { selectNode } = useAgentContext();
+  const { selectNode, deleteNode, renameNode } = useAgentContext();
 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerW, setContainerW] = useState(300);
+
+  const [contextMenu, setContextMenu] = useState<{
+    nodeId: string;
+    nodeTitle: string;
+    hasChildren: boolean;
+    isRoot: boolean;
+    x: number;
+    y: number;
+  } | null>(null);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -183,6 +193,35 @@ export function MiniGraph() {
 
   const previewId = previewNodeId || activeNodeId;
   const previewNode = storeNodes.find((n) => n.id === previewId);
+
+  const contextMenuItems: ContextMenuItem[] = useMemo(() => {
+    if (!contextMenu) return [];
+    const items: ContextMenuItem[] = [
+      {
+        label: "Rename",
+        onClick: () => {
+          const newTitle = window.prompt("New title:", contextMenu.nodeTitle);
+          if (newTitle && newTitle.trim()) {
+            renameNode(contextMenu.nodeId, newTitle.trim());
+          }
+        },
+      },
+    ];
+    if (!contextMenu.isRoot) {
+      items.push({
+        label: contextMenu.hasChildren ? "Delete (has children)" : "Delete",
+        onClick: () => {
+          if (confirm(`Delete node "${contextMenu.nodeTitle}"?`)) {
+            deleteNode(contextMenu.nodeId);
+          }
+        },
+        danger: true,
+        disabled: contextMenu.hasChildren,
+        disabledReason: contextMenu.hasChildren ? "Delete child nodes first" : undefined,
+      });
+    }
+    return items;
+  }, [contextMenu, deleteNode, renameNode]);
 
   return (
     <div className="h-full flex flex-col relative overflow-hidden">
@@ -259,6 +298,18 @@ export function MiniGraph() {
                 key={node.id}
                 onClick={(e) => handleClick(node.id, e)}
                 onDoubleClick={() => handleOpen(node.id)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  const graph = useGraphStore.getState().graph;
+                  setContextMenu({
+                    nodeId: node.id,
+                    nodeTitle: node.title,
+                    hasChildren: node.hasChildren === true,
+                    isRoot: node.id === graph?.rootNodeId,
+                    x: e.clientX,
+                    y: e.clientY,
+                  });
+                }}
                 onMouseEnter={() => setHoveredId(node.id)}
                 onMouseLeave={() => setHoveredId(null)}
                 style={{ cursor: "pointer" }}
@@ -302,6 +353,14 @@ export function MiniGraph() {
           onOpen={previewNode ? () => handleOpen(previewNode.id) : undefined}
         />
       </div>
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={contextMenuItems}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
     </div>
   );
 }

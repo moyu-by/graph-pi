@@ -9,6 +9,7 @@ interface AgentContextValue {
   createBranch: (parentNodeId: string, afterMessageId: string) => void;
   compressNode: (nodeId: string) => void;
   deleteNode: (nodeId: string) => void;
+  renameNode: (nodeId: string, title: string) => void;
   setActiveNode: (nodeId: string) => void;
   send: (msg: ClientMessage) => void;
   isConnected: boolean;

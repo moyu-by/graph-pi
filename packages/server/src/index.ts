@@ -106,6 +106,31 @@ app.get("/api/graphs/:id", (req, res) => {
   res.json(graph);
 });
 
+app.put("/api/graphs/:id", (req, res) => {
+  const graph = store.getGraph(req.params.id);
+  if (!graph) {
+    res.status(404).json({ error: "Graph not found" });
+    return;
+  }
+  const { title } = req.body;
+  if (!title || !title.trim()) {
+    res.status(400).json({ error: "title is required" });
+    return;
+  }
+  store.updateGraph(req.params.id, { title: title.trim() });
+  res.json(store.getGraph(req.params.id));
+});
+
+app.delete("/api/graphs/:id", (req, res) => {
+  const graph = store.getGraph(req.params.id);
+  if (!graph) {
+    res.status(404).json({ error: "Graph not found" });
+    return;
+  }
+  store.deleteGraph(req.params.id);
+  res.json({ ok: true });
+});
+
 app.get("/api/graphs/:id/nodes", (req, res) => {
   const nodes = store.getNodesByGraph(req.params.id);
   res.json(nodes);
@@ -118,6 +143,36 @@ app.get("/api/nodes/:id", (req, res) => {
     return;
   }
   res.json(node);
+});
+
+app.put("/api/nodes/:id", (req, res) => {
+  const node = store.getNode(req.params.id);
+  if (!node) {
+    res.status(404).json({ error: "Node not found" });
+    return;
+  }
+  const { title } = req.body;
+  if (title !== undefined && (!title || !title.trim())) {
+    res.status(400).json({ error: "title cannot be empty" });
+    return;
+  }
+  store.updateNode(req.params.id, { title: title.trim() });
+  res.json(store.getNode(req.params.id));
+});
+
+app.delete("/api/nodes/:id", (req, res) => {
+  const node = store.getNode(req.params.id);
+  if (!node) {
+    res.status(404).json({ error: "Node not found" });
+    return;
+  }
+  if (store.hasChildren(req.params.id)) {
+    res.status(400).json({ error: "Cannot delete node with children. Delete children first." });
+    return;
+  }
+  const graphId = node.graphId;
+  store.deleteNode(req.params.id);
+  res.json({ ok: true, graphId });
 });
 
 app.get("/health", (_req, res) => {

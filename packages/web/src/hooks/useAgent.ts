@@ -159,6 +159,11 @@ export function useAgent() {
     [send]
   );
 
+  const renameNode = useCallback(
+    (nodeId: string, title: string) => send({ type: "update_node_title", nodeId, title }),
+    [send]
+  );
+
   const setActiveNode = useCallback(
     (nodeId: string) => useGraphStore.getState().setActiveNode(nodeId),
     []
@@ -171,6 +176,7 @@ export function useAgent() {
     createBranch,
     compressNode,
     deleteNode,
+    renameNode,
     setActiveNode,
     send,
     isConnected,

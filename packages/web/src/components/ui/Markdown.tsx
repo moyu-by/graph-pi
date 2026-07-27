@@ -19,7 +19,14 @@ export function Markdown({ content }: Props) {
           ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
           li: ({ children }) => <li className="text-fg-primary">{children}</li>,
           code: ({ className, children }) => {
-            const isBlock = className?.includes("language-");
+            // A fenced block with no language tag (bare ```) never gets a
+            // "language-*" className, so that check alone misclassified it
+            // as inline — losing `pre`'s whitespace/newline preservation and
+            // collapsing multi-line content (e.g. ascii diagrams) onto one
+            // line. Inline code spans can never contain a literal newline
+            // (not representable in Markdown's inline syntax), so treating
+            // any multi-line content as block-level is a safe, correct check.
+            const isBlock = className?.includes("language-") || String(children).includes("\n");
             if (isBlock) {
               return (
                 <pre className="bg-bg-surface border border-border-subtle rounded-lg p-3 mb-2 overflow-x-auto">

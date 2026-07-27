@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useGraphStore } from "@/stores/graph-store";
 import { useGraphListStore } from "@/stores/graph-list-store";
@@ -6,6 +6,7 @@ import { useAgentContext } from "@/hooks/useAgentContext";
 import { config } from "@/lib/config";
 import { graphAvatarColor } from "@/lib/colors";
 import { ModelSelector } from "./ModelSelector";
+import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 
 interface Props {
   collapsed: boolean;
@@ -25,12 +26,21 @@ export function Sidebar({ collapsed, onToggle }: Props) {
   const [createError, setCreateError] = useState<string | null>(null);
   const nodes = useGraphStore((s) => s.nodes);
   const activeNodeId = useGraphStore((s) => s.activeNodeId);
-  const { selectNode } = useAgentContext();
+  const { selectNode, deleteNode, renameNode } = useAgentContext();
   const sidebarWidthRef = useRef(224);
   const [sidebarWidth, setSidebarWidth] = useState(224);
   const dragSidebar = useRef(false);
   const dragStartX = useRef(0);
   const dragStartW = useRef(0);
+
+  const [contextMenu, setContextMenu] = useState<{
+    nodeId: string;
+    nodeTitle: string;
+    hasChildren: boolean;
+    isRoot: boolean;
+    x: number;
+    y: number;
+  } | null>(null);
 
   const onSidebarDragStart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -89,6 +99,35 @@ export function Sidebar({ collapsed, onToggle }: Props) {
       setCreating(false);
     }
   };
+
+  const contextMenuItems: ContextMenuItem[] = useMemo(() => {
+    if (!contextMenu) return [];
+    const items: ContextMenuItem[] = [
+      {
+        label: "Rename",
+        onClick: () => {
+          const newTitle = window.prompt("New title:", contextMenu.nodeTitle);
+          if (newTitle && newTitle.trim()) {
+            renameNode(contextMenu.nodeId, newTitle.trim());
+          }
+        },
+      },
+    ];
+    if (!contextMenu.isRoot) {
+      items.push({
+        label: contextMenu.hasChildren ? "Delete (has children)" : "Delete",
+        onClick: () => {
+          if (confirm(`Delete node "${contextMenu.nodeTitle}"?`)) {
+            deleteNode(contextMenu.nodeId);
+          }
+        },
+        danger: true,
+        disabled: contextMenu.hasChildren,
+        disabledReason: contextMenu.hasChildren ? "Delete child nodes first" : undefined,
+      });
+    }
+    return items;
+  }, [contextMenu, deleteNode, renameNode]);
 
   if (collapsed) {
     return (
@@ -261,6 +300,18 @@ export function Sidebar({ collapsed, onToggle }: Props) {
                         useGraphStore.getState().setActiveNode(node.id);
                         selectNode(node.id);
                       }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        const graph = useGraphStore.getState().graph;
+                        setContextMenu({
+                          nodeId: node.id,
+                          nodeTitle: node.title,
+                          hasChildren: node.hasChildren === true,
+                          isRoot: node.id === graph?.rootNodeId,
+                          x: e.clientX,
+                          y: e.clientY,
+                        });
+                      }}
                     >
                       {node.title}
                     </button>
@@ -273,6 +324,14 @@ export function Sidebar({ collapsed, onToggle }: Props) {
       </div>
 
       <ModelSelector collapsed={false} />
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={contextMenuItems}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
     </div>
   );
 }

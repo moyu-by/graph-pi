@@ -39,47 +39,58 @@ export function MessageList() {
     }
   }, [messages, streamingMessage, atBottom]);
 
+  // The floating button below is positioned relative to the nearest
+  // `relative`/`absolute` ancestor. It used to be a direct child of the
+  // scrolling div itself, whose own scroll container IS that ancestor — so
+  // `bottom-5` was resolved against a coordinate system that scrolls with
+  // the content, and the button drifted off-screen as you scrolled instead
+  // of staying pinned. Fix: the scrolling div fills a separate, non-scrolling
+  // `relative` wrapper via `absolute inset-0`, and the button sits outside
+  // the scrolling div (a sibling within that stable wrapper) so its
+  // containing block never moves.
   return (
-    <div className="flex-1 overflow-y-auto relative" ref={scrollRef} onScroll={checkAtBottom}>
-      <div className="w-[92%] min-w-[360px] max-w-[960px] mx-auto px-6 py-4 space-y-4">
-        <AncestorContext />
-        {messages.map((msg) => (
-          <MessageItem key={msg.id} message={msg} />
-        ))}
+    <div className="flex-1 min-h-0 relative">
+      <div className="absolute inset-0 overflow-y-auto" ref={scrollRef} onScroll={checkAtBottom}>
+        <div className="w-[92%] min-w-[360px] max-w-[960px] mx-auto px-6 py-4 space-y-4">
+          <AncestorContext />
+          {messages.map((msg) => (
+            <MessageItem key={msg.id} message={msg} />
+          ))}
 
-        {isStreaming && streamingMessage && (
-          <div className="group relative py-1">
-            <div className="flex gap-3">
-              <div className="w-5 shrink-0 flex justify-end pt-1">
-                <div className="w-5 h-5 rounded-full flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg, var(--green), var(--teal))" }}>
-                  <div className="w-1.5 h-1.5 rounded-full bg-white/80 animate-pulse" />
+          {isStreaming && streamingMessage && (
+            <div className="group relative py-1">
+              <div className="flex gap-3">
+                <div className="w-5 shrink-0 flex justify-end pt-1">
+                  <div className="w-5 h-5 rounded-full flex items-center justify-center"
+                    style={{ background: "linear-gradient(135deg, var(--green), var(--teal))" }}>
+                    <div className="w-1.5 h-1.5 rounded-full bg-white/80 animate-pulse" />
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0 text-sm rounded-xl rounded-tl-sm px-3.5 py-2.5 border"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(62, 219, 160, 0.06), rgba(48, 216, 184, 0.03))",
+                    borderColor: "rgba(62, 219, 160, 0.12)",
+                  }}>
+                  <Markdown content={streamingMessage} />
+                  <span className="inline-block w-1 h-4 ml-0.5 align-middle rounded-full animate-pulse"
+                    style={{ background: "var(--accent)" }} />
                 </div>
               </div>
-              <div className="flex-1 min-w-0 text-sm rounded-xl rounded-tl-sm px-3.5 py-2.5 border"
-                style={{
-                  background: "linear-gradient(135deg, rgba(62, 219, 160, 0.06), rgba(48, 216, 184, 0.03))",
-                  borderColor: "rgba(62, 219, 160, 0.12)",
-                }}>
-                <Markdown content={streamingMessage} />
-                <span className="inline-block w-1 h-4 ml-0.5 align-middle rounded-full animate-pulse"
-                  style={{ background: "var(--accent)" }} />
-              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {messages.length === 0 && !isStreaming && (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-12 h-12 rounded-xl mb-3 flex items-center justify-center bg-bg-elevated/50 border border-border-subtle">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-fg-muted">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-              </svg>
+          {messages.length === 0 && !isStreaming && (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-12 h-12 rounded-xl mb-3 flex items-center justify-center bg-bg-elevated/50 border border-border-subtle">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-fg-muted">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+              </div>
+              <p className="text-sm text-fg-secondary mb-1">Start a conversation</p>
+              <p className="text-xs text-fg-faint">Send a message to begin</p>
             </div>
-            <p className="text-sm text-fg-secondary mb-1">Start a conversation</p>
-            <p className="text-xs text-fg-faint">Send a message to begin</p>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {!atBottom && messages.length > 0 && (

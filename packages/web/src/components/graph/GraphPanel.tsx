@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useEffect } from "react";
+import { useMemo, useCallback, useEffect, useState } from "react";
 import {
   ReactFlow,
   useNodesState,
@@ -13,6 +13,7 @@ import "@xyflow/react/dist/style.css";
 import { NodeCard, type GraphNode } from "./NodeCard";
 import { EdgeLine } from "./EdgeLine";
 import { MiniGraph } from "./MiniGraph";
+import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { useGraphStore } from "@/stores/graph-store";
 import { useAgentContext } from "@/hooks/useAgentContext";
 
@@ -85,9 +86,18 @@ export function GraphPanel() {
   const setActiveNode = useGraphStore((s) => s.setActiveNode);
   const toggleNodeSelection = useGraphStore((s) => s.toggleNodeSelection);
   const canvasMode = useGraphStore((s) => s.canvasMode);
-  const { selectNode } = useAgentContext();
+  const { selectNode, deleteNode, renameNode } = useAgentContext();
 
   const positions = useMemo(() => layoutTree(storeNodes), [storeNodes]);
+
+  const [contextMenu, setContextMenu] = useState<{
+    nodeId: string;
+    nodeTitle: string;
+    hasChildren: boolean;
+    isRoot: boolean;
+    x: number;
+    y: number;
+  } | null>(null);
 
   const computedNodes: GraphNode[] = useMemo(
     () =>
@@ -145,6 +155,54 @@ export function GraphPanel() {
     [activeNodeId, setActiveNode, selectNode, toggleNodeSelection]
   );
 
+  const onNodeContextMenu = useCallback(
+    (event: React.MouseEvent, node: Node) => {
+      event.preventDefault();
+      const storeNode = storeNodes.find((n) => n.id === node.id);
+      if (!storeNode) return;
+      const graph = useGraphStore.getState().graph;
+      setContextMenu({
+        nodeId: node.id,
+        nodeTitle: storeNode.title,
+        hasChildren: storeNode.hasChildren === true,
+        isRoot: node.id === graph?.rootNodeId,
+        x: event.clientX,
+        y: event.clientY,
+      });
+    },
+    [storeNodes]
+  );
+
+  const contextMenuItems: ContextMenuItem[] = useMemo(() => {
+    if (!contextMenu) return [];
+    const items: ContextMenuItem[] = [
+      {
+        label: "Rename",
+        onClick: () => {
+          const newTitle = window.prompt("New title:", contextMenu.nodeTitle);
+          if (newTitle && newTitle.trim()) {
+            renameNode(contextMenu.nodeId, newTitle.trim());
+          }
+        },
+      },
+    ];
+    // Only show delete for non-root nodes
+    if (!contextMenu.isRoot) {
+      items.push({
+        label: contextMenu.hasChildren ? "Delete (has children)" : "Delete",
+        onClick: () => {
+          if (confirm(`Delete node "${contextMenu.nodeTitle}"?`)) {
+            deleteNode(contextMenu.nodeId);
+          }
+        },
+        danger: true,
+        disabled: contextMenu.hasChildren,
+        disabledReason: contextMenu.hasChildren ? "Delete child nodes first" : undefined,
+      });
+    }
+    return items;
+  }, [contextMenu, deleteNode, renameNode]);
+
   if (canvasMode === "collapsed") {
     return <MiniGraph />;
   }
@@ -157,6 +215,7 @@ export function GraphPanel() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeClick={onNodeClick}
+        onNodeContextMenu={onNodeContextMenu}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         fitView
@@ -167,6 +226,14 @@ export function GraphPanel() {
         <Controls />
         <Background />
       </ReactFlow>
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={contextMenuItems}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
     </div>
   );
 }
