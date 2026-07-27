@@ -3,13 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { config } from "@/lib/config";
 import { useGraphListStore } from "@/stores/graph-list-store";
-import { graphAvatarColor } from "@/lib/colors";
 
 export default function HomePage() {
   const router = useNavigate();
-  const graphs = useGraphListStore((s) => s.graphs);
-  const graphsLoading = useGraphListStore((s) => s.loading);
-  const graphsError = useGraphListStore((s) => s.error);
   const loadGraphs = useGraphListStore((s) => s.load);
   const [newTitle, setNewTitle] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -96,63 +92,46 @@ export default function HomePage() {
           <p className="text-xs text-red text-center max-w-sm -mt-2">{createError}</p>
         )}
 
-        <div className="w-full max-w-md mt-4">
-          {graphsLoading && (
-            <div className="text-center mt-8">
-              <p className="text-xs text-fg-muted">Loading graphs…</p>
-            </div>
-          )}
-          {!graphsLoading && graphsError && (
-            <div className="text-center mt-8">
-              <p className="text-xs text-red mb-2">{graphsError}</p>
-              <button
-                className="text-xs text-accent hover:underline"
-                onClick={loadGraphs}
-              >
-                Retry
-              </button>
-            </div>
-          )}
-          {!graphsLoading && !graphsError && graphs.length === 0 && (
-            <div className="text-center mt-8">
-              <div className="w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center bg-bg-elevated/50 border border-border-subtle">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-fg-muted">
-                  <circle cx="12" cy="12" r="10"/>
-                  <line x1="12" y1="8" x2="12" y2="16"/>
-                  <line x1="8" y1="12" x2="16" y2="12"/>
-                </svg>
-              </div>
-              <p className="text-xs text-fg-muted">Create your first graph to get started</p>
-            </div>
-          )}
-          {!graphsLoading && !graphsError && graphs.map((g, i) => {
-            const color = graphAvatarColor(i);
-            return (
-            <div
-              key={g.id}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all group hover:bg-bg-elevated/60 hover:border-border-default border border-transparent hover:shadow-sm mb-1"
-              onClick={() => router(`/graph/${g.id}`)}
-              style={{ animationDelay: `${i * 50}ms` }}
-            >
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all group-hover:scale-110"
-                style={{ background: `linear-gradient(135deg, ${color}22, ${color}08)`, border: `1px solid ${color}30)` }}>
-                <span className="text-xs font-semibold" style={{ color }}>
-                  {g.title.charAt(0).toUpperCase()}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm text-fg-primary truncate group-hover:text-white transition-colors">{g.title}</h3>
-                <p className="text-[10px] text-fg-muted font-mono mt-0.5">
-                  {new Date(g.createdAt).toLocaleDateString()}
-                </p>
-              </div>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"
-                className="text-fg-faint group-hover:text-accent transition-all group-hover:translate-x-0.5">
-                <polyline points="9 18 15 12 9 6"/>
-              </svg>
-            </div>
-            );
-          })}
+        {/* Graph network illustration */}
+        <div className="relative w-48 h-48 mx-auto mt-6 select-none">
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 192 192" fill="none">
+            <circle cx="96" cy="96" r="72" stroke="var(--border-subtle)" strokeWidth="0.5" strokeDasharray="3 4" />
+            <circle cx="96" cy="96" r="48" stroke="var(--border-subtle)" strokeWidth="0.8" strokeDasharray="2 5" />
+            <line x1="96" y1="24" x2="96" y2="48" stroke="var(--border-default)" strokeWidth="1" opacity="0.6" />
+            <line x1="158.5" y1="58.5" x2="130" y2="72" stroke="var(--border-default)" strokeWidth="1" opacity="0.6" />
+            <line x1="158.5" y1="133.5" x2="130" y2="120" stroke="var(--border-default)" strokeWidth="1" opacity="0.6" />
+            <line x1="96" y1="168" x2="96" y2="144" stroke="var(--border-default)" strokeWidth="1" opacity="0.6" />
+            <line x1="33.5" y1="133.5" x2="62" y2="120" stroke="var(--border-default)" strokeWidth="1" opacity="0.6" />
+            <line x1="33.5" y1="58.5" x2="62" y2="72" stroke="var(--border-default)" strokeWidth="1" opacity="0.6" />
+            <line x1="48" y1="96" x2="72" y2="96" stroke="var(--border-default)" strokeWidth="0.8" opacity="0.4" />
+            <line x1="120" y1="96" x2="144" y2="96" stroke="var(--border-default)" strokeWidth="0.8" opacity="0.4" />
+            <line x1="96" y1="138" x2="96" y2="124" stroke="var(--border-default)" strokeWidth="0.8" opacity="0.4" />
+            <line x1="96" y1="68" x2="96" y2="54" stroke="var(--border-default)" strokeWidth="0.8" opacity="0.4" />
+          </svg>
+          <div className="absolute top-[8px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full animate-glow-pulse"
+            style={{ background: "var(--purple)", boxShadow: "0 0 6px var(--purple)" }} />
+          <div className="absolute top-[52px] right-[8px] w-2.5 h-2.5 rounded-full animate-glow-pulse"
+            style={{ background: "var(--blue)", boxShadow: "0 0 6px var(--blue)", animationDelay: "0.3s" }} />
+          <div className="absolute bottom-[52px] right-[8px] w-2.5 h-2.5 rounded-full animate-glow-pulse"
+            style={{ background: "var(--cyan)", boxShadow: "0 0 6px var(--cyan)", animationDelay: "0.6s" }} />
+          <div className="absolute bottom-[8px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full animate-glow-pulse"
+            style={{ background: "var(--green)", boxShadow: "0 0 6px var(--green)", animationDelay: "0.9s" }} />
+          <div className="absolute bottom-[52px] left-[8px] w-2.5 h-2.5 rounded-full animate-glow-pulse"
+            style={{ background: "var(--cyan)", boxShadow: "0 0 6px var(--cyan)", animationDelay: "1.2s" }} />
+          <div className="absolute top-[52px] left-[8px] w-2.5 h-2.5 rounded-full animate-glow-pulse"
+            style={{ background: "var(--blue)", boxShadow: "0 0 6px var(--blue)", animationDelay: "0.15s" }} />
+          <div className="absolute top-[62px] left-1/2 -translate-x-1/2 w-2 h-2 rounded-full"
+            style={{ background: "var(--accent)", boxShadow: "0 0 4px var(--accent)" }} />
+          <div className="absolute top-[88px] right-[62px] w-2 h-2 rounded-full"
+            style={{ background: "var(--purple)", boxShadow: "0 0 4px var(--purple)" }} />
+          <div className="absolute top-[88px] left-[62px] w-2 h-2 rounded-full"
+            style={{ background: "var(--purple)", boxShadow: "0 0 4px var(--purple)" }} />
+          <div className="absolute bottom-[62px] left-1/2 -translate-x-1/2 w-2 h-2 rounded-full"
+            style={{ background: "var(--accent)", boxShadow: "0 0 4px var(--accent)" }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-2xl flex items-center justify-center animate-glow-pulse shadow-glow"
+            style={{ background: "var(--gradient-primary)" }}>
+            <span className="text-white text-2xl font-bold font-mono leading-none" style={{ fontFamily: "var(--font-mono)" }}>π</span>
+          </div>
         </div>
       </div>
     </div>
